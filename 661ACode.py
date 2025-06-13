@@ -3,6 +3,7 @@ import requests
 import json
 from datetime import datetime
 import pytz
+import os
 
 app = Flask(__name__)
 
@@ -356,9 +357,6 @@ def dashboard():
 """
     brussels = pytz.timezone("Europe/Brussels")
     return render_template_string(html, stops=all_departures, now=datetime.now(brussels).strftime('%H:%M:%S'))
-
-if __name__ == '__main__':
-import os
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
