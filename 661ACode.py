@@ -358,6 +358,9 @@ def dashboard():
     return render_template_string(html, stops=all_departures, now=datetime.now(brussels).strftime('%H:%M:%S'))
 
 if __name__ == '__main__':
-   import os
-port = int(os.environ.get("PORT", 5050))
-app.run(host="0.0.0.0", port=port)
+    
+import os
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5050))
+    app.run(host='0.0.0.0', port=port, debug=True)
