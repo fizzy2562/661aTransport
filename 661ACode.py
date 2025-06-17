@@ -3,7 +3,6 @@ import requests
 import json
 from datetime import datetime
 import pytz
-import os
 
 app = Flask(__name__)
 
@@ -56,24 +55,25 @@ def dashboard():
     for stop in STOPS:
         departures = get_departures(stop['pointid'])[:3]
         all_departures.append({'name': stop['name'], 'departures': departures})
+
+    # You can use any high-res Uccle church photo with public sharing rights
+    background_url = "https://www.lesoir.be/sites/default/files/dpistyles_v2/ls_16_9_864w/2016/12/08/node_72437/2500625/public/2016/12/08/B9710464946Z.1_20161208135534_000+GKV84J8SS.2-0.jpg?itok=aoKFKfRq1541614168"
+    brussels = pytz.timezone("Europe/Brussels")
     html = """
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Rue Joseph Bens - STIB Tram 18 – Real-Time Brussels Departures</title>
     <meta http-equiv="refresh" content="60" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400&display=swap" rel="stylesheet">
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+        html, body { height: 100%; margin: 0; padding: 0; }
         body {
             min-height: 100vh;
             margin: 0;
-            padding: 0;
             font-family: 'Montserrat', 'Arial', sans-serif;
-            background: #10151a;
+            background: #111217;
             overflow-x: hidden;
         }
         .bg-img {
@@ -81,163 +81,201 @@ def dashboard():
             left: 0; top: 0; width: 100vw; height: 100vh;
             z-index: 0;
             object-fit: cover;
-            filter: blur(3px) brightness(0.8) grayscale(0.1);
+            filter: blur(2.5px) brightness(0.73) grayscale(0.06);
         }
         .overlay {
             position: fixed;
             left: 0; top: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(130deg, rgba(0,51,115,0.5) 0%, rgba(235,235,186,0.25) 100%);
+            background: linear-gradient(120deg, rgba(0,51,115,0.30) 0%, rgba(240,230,190,0.10) 100%);
             z-index: 1;
         }
         .container {
             position: relative;
             z-index: 2;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            justify-content: flex-start;
+            padding: 0 0 15px 0;
+            width: 100vw;
+        }
+        .clock-main {
+            font-size: 3em;
+            color: #e7e7e7;
+            font-family: 'Montserrat', monospace;
+            font-weight: 900;
+            text-align: center;
+            text-shadow: 0 6px 34px #00397329, 0 1px 0 #000b;
+            margin-top: 48px;
+            margin-bottom: 7px;
+            letter-spacing: 2.2px;
+            width: 100%;
+            user-select: none;
         }
         .title {
-            margin-top: 48px;
-            font-size: 2.6em;
+            font-size: 2.07em;
             color: #ffe259;
-            text-shadow: 0 4px 24px #000b;
+            text-shadow: 0 4px 20px #000a;
             text-align: center;
             letter-spacing: 1.5px;
             font-weight: 800;
-        }
-        .clock {
-            font-size: 2.2em;
-            margin: 20px 0 32px 0;
-            color: #54ff97;
-            font-family: 'Montserrat', monospace;
-            text-align: center;
-            letter-spacing: 2px;
-            text-shadow: 0 4px 18px #00397344;
-        }
-        .main-flex-row {
+            margin: 0 0 10px 0;
             width: 100%;
+        }
+        .refresh-row {
+            margin-top: 7px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .refresh-icon {
+            animation: spin 1.5s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 7px;
+            font-size: 1.3em;
+            color: #38e05a;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+        }
+        .main-grid {
             display: flex;
             flex-direction: row;
+            justify-content: center;
             align-items: flex-start;
-            justify-content: center;
             gap: 42px;
-            margin-top: 10px;
-        }
-        .stops-flex {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 48px;
-            justify-content: center;
             width: 100%;
+            margin-top: 22px;
+            margin-bottom: 10px;
         }
-        .stop-card {
+        @media (max-width:1100px) {
+            .main-grid { flex-direction: column; align-items: center; gap:14px;}
+        }
+        .stop-card, .weather-card {
             background: rgba(34, 37, 47, 0.97);
             border-radius: 24px;
-            padding: 36px 38px 26px 38px;
-            box-shadow: 0 12px 40px 2px #00397355, 0 1.5px 9px #0008;
-            min-width: 340px;
+            padding: 33px 34px 27px 34px;
+            box-shadow: 0 12px 40px 2px #00397327, 0 1.5px 9px #0007;
+            min-width: 320px;
             max-width: 390px;
-            min-height: 260px;
-            margin-bottom: 32px;
+            min-height: 200px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
         }
         .stop-dir {
-            margin-top: 0;
-            margin-bottom: 28px;
-            font-size: 1.45em;
+            margin-bottom: 18px;
+            font-size: 1.32em;
             color: #fcd900;
-            letter-spacing: 1.2px;
+            letter-spacing: 1.1px;
             text-align: center;
-            font-weight: 700;
-            text-shadow: 0 2px 12px #0008;
+            font-weight: 800;
+            text-shadow: 0 2px 11px #0007;
         }
         .departure {
             background: #fff2;
-            margin-bottom: 18px;
-            padding: 16px 20px;
-            border-radius: 14px;
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            border-radius: 13px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 1.17em;
+            font-size: 1.15em;
+            min-width: 240px;
         }
         .destination {
             color: #fff;
-            font-weight: 600;
-            margin-right: 20px;
+            font-weight: 700;
+            margin-right: 14px;
             letter-spacing: 1px;
         }
         .minutes {
-            font-size: 1.45em;
+            font-size: 1.5em;
             font-weight: 900;
             color: #38e05a;
-            margin-left: 16px;
+            margin-left: 10px;
             letter-spacing: 2px;
-            text-shadow: 0 1.5px 8px #38e05a77;
+            text-shadow: 0 1.5px 8px #38e05a67;
         }
         .time {
-            font-size: 1.08em;
+            font-size: 1.01em;
             color: #ffe259;
-            background: #003973dd;
-            padding: 2px 13px 2px 13px;
+            background: #003973d0;
+            padding: 2px 13px;
             border-radius: 10px;
-            margin-left: 17px;
+            margin-left: 13px;
             font-weight: 500;
         }
         .no-tram {
             color: #ff6f61;
-            font-size: 1.1em;
+            font-size: 1.13em;
             margin-top: 30px;
             text-align: center;
             font-weight: 700;
-        }
-        .weatherbox {
-            align-self: flex-start;
-            position: static;
-            margin-top: 30px;
-            background: rgba(30,30,30,0.72);
-            color: #fff;
-            border-radius: 18px;
-            padding: 13px 30px 13px 22px;
-            font-size: 1.12em;
-            font-family: inherit;
-            font-weight: 500;
+            letter-spacing: 1px;
             display: flex;
             align-items: center;
-            box-shadow: 0 2px 15px #0006;
-            z-index: 3;
+            justify-content: center;
+        }
+        .no-tram-icon {
+            font-size: 1.3em;
+            margin-right: 6px;
+        }
+        .weather-card {
+            padding: 38px 30px 38px 30px;
+            min-height: 210px;
+            min-width: 280px;
+            max-width: 360px;
+            align-items: center;
+            justify-content: center;
+        }
+        .weatherbar-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 19px;
         }
         .weathericon {
-            width: 34px;
-            height: 34px;
-            margin-right: 13px;
-            margin-left: -10px;
-            filter: drop-shadow(0 2px 6px #00397322);
+            font-size: 2.8em;
+            margin-bottom: 7px;
+            margin-right: 0;
         }
-        .atomium {
-            display: block;
-            margin: 34px auto 12px auto;
-            opacity: 0.14;
-            height: 90px;
-            filter: drop-shadow(0 3px 8px #00397333);
-            pointer-events: none;
+        .weathertemp {
+            font-size: 2.3em;
+            font-weight: bold;
+            color: #ffe259;
+        }
+        .weatherdesc {
+            font-size: 1.18em;
+            font-weight: 700;
+            color: #eee;
+        }
+        .weather-location {
+            margin-top: 11px;
+            font-size: 1.1em;
+            color: #ccc;
+            opacity: 0.72;
         }
         .footer {
-            margin: 32px 0 13px 0;
+            margin: 36px 0 12px 0;
             color: #fff8;
             text-align: center;
             font-size: 1em;
             letter-spacing: 1px;
         }
-        @media (max-width: 1200px) {
-            .main-flex-row { flex-direction: column; align-items: center; gap: 12px;}
-            .weatherbox { margin-top: 24px; margin-bottom: 12px;}
-        }
-        @media (max-width: 1000px) {
-            .stops-flex { flex-direction: column; align-items: center;}
-            .stop-card { width: 95%; max-width: 99vw; }
-            .container { padding: 0 4vw;}
+        .atomium {
+            display: block;
+            margin: 34px auto 12px auto;
+            opacity: 0.13;
+            height: 70px;
+            filter: drop-shadow(0 3px 8px #00397322);
+            pointer-events: none;
         }
     </style>
     <script>
@@ -247,8 +285,12 @@ def dashboard():
         var m = String(now.getMinutes()).padStart(2, '0');
         var s = String(now.getSeconds()).padStart(2, '0');
         document.getElementById('clock').innerText = h + ':' + m + ':' + s;
+        var sec = 60 - now.getSeconds();
+        document.getElementById('nextrefresh').innerText = sec + "s";
     }
-    // WEATHER INTEGRATION FOR UCCLE, BRUSSELS
+    setInterval(updateClock, 1000);
+
+    // Weather
     const weatherIcons = {
         0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
         45: "🌫️", 48: "🌫️",
@@ -286,7 +328,6 @@ def dashboard():
                   const code = w.weathercode;
                   const prec = w.precipitation;
                   let icon, desc;
-
                   if (prec > 0) {
                       if (snowCodes.includes(code)) {
                           icon = "❄️";
@@ -297,7 +338,7 @@ def dashboard():
                       }
                   } else {
                       if (rainCodes.includes(code) || snowCodes.includes(code)) {
-                          icon = "☀️";  // DRY/SUNNY icon
+                          icon = "☀️";
                           desc = "Dry";
                       } else {
                           icon = weatherIcons[code] || "☀️";
@@ -315,38 +356,53 @@ def dashboard():
     </script>
 </head>
 <body>
-    <img class="bg-img" src="https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=1200&q=80" alt="Brussels background"/>
+    <img class="bg-img" src="{{ background_url }}" alt="Uccle Church Background"/>
     <div class="overlay"></div>
     <div class="container">
-        <div class="title">Rue Joseph Bens - STIB Tram 18 – Real-Time Brussels Departures</div>
-        <div class="clock" id="clock"></div>
-        <div class="main-flex-row">
-            <div class="stops-flex">
-                {% for stop in stops %}
-                <div class="stop-card">
-                    <div class="stop-dir">{{ stop.name }}</div>
-                    {% if stop.departures %}
-                        {% for dep in stop.departures %}
-                        <div class="departure">
-                            <span class="destination">→ {{ dep.destination }}</span>
-                            <span class="minutes">{{ dep.minutes }} min</span>
-                            <span class="time">{{ dep.time }}</span>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="departure no-tram">No upcoming trams.</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
+        <div class="clock-main" id="clock"></div>
+        <div class="title">Rue Joseph Bens – STIB Tram 18 Departures</div>
+        <div class="refresh-row">
+            <span class="refresh-icon">⟳</span>
+            <span style="color:#eee;">Auto refresh in <span id="nextrefresh">60s</span></span>
+        </div>
+        <div class="main-grid">
+            <div class="stop-card">
+                <div class="stop-dir">{{ all_departures[0].name }}</div>
+                {% if all_departures[0].departures %}
+                    {% for dep in all_departures[0].departures %}
+                    <div class="departure">
+                        <span class="destination">→ {{ dep.destination }}</span>
+                        <span class="minutes">{{ dep.minutes }} min</span>
+                        <span class="time">{{ dep.time }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="departure no-tram"><span class="no-tram-icon">🚫</span>No upcoming trams.</div>
+                {% endif %}
             </div>
-            <div class="weatherbox">
-                <span id="weathericon" class="weathericon">⏳</span>
-                <span id="weathertemp" style="margin-right: 14px;">--°C</span>
-                <span id="weatherdesc" style="opacity: 0.88;">Loading...</span>
-                <span style="margin-left:12px;font-size:0.88em;opacity:0.6;">Uccle</span>
+            <div class="stop-card">
+                <div class="stop-dir">{{ all_departures[1].name }}</div>
+                {% if all_departures[1].departures %}
+                    {% for dep in all_departures[1].departures %}
+                    <div class="departure">
+                        <span class="destination">→ {{ dep.destination }}</span>
+                        <span class="minutes">{{ dep.minutes }} min</span>
+                        <span class="time">{{ dep.time }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="departure no-tram"><span class="no-tram-icon">🚫</span>No upcoming trams.</div>
+                {% endif %}
+            </div>
+            <div class="weather-card">
+                <div class="weatherbar-content">
+                    <span id="weathericon" class="weathericon">⏳</span>
+                    <span id="weathertemp" class="weathertemp">--°C</span>
+                    <span id="weatherdesc" class="weatherdesc">Loading...</span>
+                    <span class="weather-location">Uccle</span>
+                </div>
             </div>
         </div>
-        <!-- Inline SVG Atomium: works even offline -->
         <svg class="atomium" viewBox="0 0 100 60"><circle cx="20" cy="50" r="8" fill="#e5e5be"/><circle cx="80" cy="50" r="8" fill="#e5e5be"/><circle cx="50" cy="10" r="9" fill="#ffe259"/><circle cx="50" cy="50" r="8" fill="#e5e5be"/><line x1="20" y1="50" x2="50" y2="10" stroke="#ffe259" stroke-width="3"/><line x1="80" y1="50" x2="50" y2="10" stroke="#ffe259" stroke-width="3"/><line x1="20" y1="50" x2="50" y2="50" stroke="#ffe259" stroke-width="3"/><line x1="50" y1="50" x2="80" y2="50" stroke="#ffe259" stroke-width="3"/></svg>
         <div class="footer">
             Made with ❤️ in Brussels &middot; {{ now }}
@@ -355,9 +411,12 @@ def dashboard():
 </body>
 </html>
 """
-    brussels = pytz.timezone("Europe/Brussels")
-    return render_template_string(html, stops=all_departures, now=datetime.now(brussels).strftime('%H:%M:%S'))
-
+    return render_template_string(
+        html,
+        all_departures=all_departures,
+        now=datetime.now(brussels).strftime('%H:%M:%S'),
+        background_url=background_url
+    )
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
