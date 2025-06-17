@@ -7,7 +7,7 @@ import os
 
 app = Flask(__name__)
 
-API_KEY = "fd7111475c6a67de3fbec15188ce31cd17b12c8cb3b8da925929214d"
+API_KEY = os.environ.get("STIB_API_KEY")
 
 STOPS = [
     {'name': 'in the direction of VAN HAELEN', 'pointid': '5831'},
