@@ -406,8 +406,17 @@ def dashboard():
         </div>
         <svg class="atomium" viewBox="0 0 100 60"><circle cx="20" cy="50" r="8" fill="#e5e5be"/><circle cx="80" cy="50" r="8" fill="#e5e5be"/><circle cx="50" cy="10" r="9" fill="#ffe259"/><circle cx="50" cy="50" r="8" fill="#e5e5be"/><line x1="20" y1="50" x2="50" y2="10" stroke="#ffe259" stroke-width="3"/><line x1="80" y1="50" x2="50" y2="10" stroke="#ffe259" stroke-width="3"/><line x1="20" y1="50" x2="50" y2="50" stroke="#ffe259" stroke-width="3"/><line x1="50" y1="50" x2="80" y2="50" stroke="#ffe259" stroke-width="3"/></svg>
         <div class="footer">
-            Made with ❤️ in Brussels &middot; {{ now }}
-        </div>
+    Made with ❤️ in Brussels &nbsp;|&nbsp; 
+    <a href="https://www.consultantcloud.io" target="_blank" style="text-decoration:none;vertical-align:middle;">
+        <img src="https://www.consultantcloud.io/assets/landing-page-theme/img/logo.png"
+             alt="ConsultantCloud"
+             style="height:1.2em;vertical-align:middle;margin-right:7px;border-radius:5px;box-shadow:0 2px 8px #00397333;">
+    </a>
+    <span style="font-weight:600;letter-spacing:1px;font-size:1.04em;">
+        made by ConsultantCloud
+    </span>
+    <span style="color:#888;font-size:0.97em;margin-left:9px;">{{ now }}</span>
+</div>
     </div>
 </body>
 </html>
