@@ -148,32 +148,33 @@ def dashboard():
     <title>661A Transport App</title>
     <meta http-equiv="refresh" content="60" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#3c4a44" />
+    <meta name="theme-color" content="#00B8E6" />
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --clay: #8d614f;
-            --olive: #41534c;
-            --ink: #1f2522;
-            --sand: #eadac1;
-            --cream: #f8f2e8;
-            --amber: #d39a4d;
-            --mist: rgba(248, 242, 232, 0.16);
-            --panel: rgba(30, 36, 34, 0.74);
-            --panel-strong: rgba(22, 28, 26, 0.86);
-            --border: rgba(248, 242, 232, 0.18);
-            --shadow: 0 22px 60px rgba(15, 17, 16, 0.24);
+            --cyan: #00b8e6;
+            --teal: #1ad9be;
+            --green: #00cc66;
+            --bg: #f8f9fa;
+            --surface: rgba(255, 255, 255, 0.95);
+            --surface-strong: #ffffff;
+            --surface-soft: #eef5f7;
+            --text: #12202d;
+            --muted: #5c6d79;
+            --border: rgba(18, 32, 45, 0.10);
+            --shadow: 0 18px 46px rgba(18, 48, 77, 0.10);
+            --accent: linear-gradient(135deg, var(--cyan), var(--teal) 52%, var(--green));
         }
 
         * { box-sizing: border-box; }
         html, body { margin: 0; min-height: 100%; }
         body {
-            font-family: "Manrope", sans-serif;
-            color: var(--cream);
-            background: #17201d;
+            font-family: "Inter", sans-serif;
+            color: var(--text);
+            background: var(--bg);
             overflow-x: hidden;
         }
 
@@ -185,7 +186,7 @@ def dashboard():
             object-fit: cover;
             opacity: 0;
             transition: opacity 1.4s ease;
-            filter: saturate(0.96) contrast(1.02) brightness(0.74);
+            filter: saturate(1.02) contrast(1.02) brightness(1.08);
             z-index: 0;
         }
 
@@ -196,9 +197,9 @@ def dashboard():
             inset: 0;
             z-index: 1;
             background:
-                radial-gradient(circle at 20% 18%, rgba(234, 218, 193, 0.20), transparent 36%),
-                radial-gradient(circle at 82% 16%, rgba(141, 97, 79, 0.20), transparent 28%),
-                linear-gradient(180deg, rgba(22, 26, 25, 0.22), rgba(19, 24, 22, 0.78));
+                radial-gradient(circle at 16% 12%, rgba(0, 184, 230, 0.14), transparent 28%),
+                radial-gradient(circle at 84% 10%, rgba(0, 204, 102, 0.12), transparent 24%),
+                linear-gradient(180deg, rgba(248, 249, 250, 0.74), rgba(248, 249, 250, 0.96));
         }
 
         .grain {
@@ -206,29 +207,93 @@ def dashboard():
             inset: 0;
             z-index: 2;
             pointer-events: none;
-            opacity: 0.1;
+            opacity: 0.04;
             background-image:
-                linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-            background-size: 120px 120px;
+                linear-gradient(rgba(18,32,45,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18,32,45,0.03) 1px, transparent 1px);
+            background-size: 144px 144px;
         }
 
         .shell {
             position: relative;
             z-index: 3;
             min-height: 100vh;
-            padding: 28px 18px 30px;
+            padding: 22px 18px 30px;
+        }
+
+        .topbar {
+            max-width: 1200px;
+            margin: 0 auto 18px;
+            padding: 16px 22px;
+            border: 1px solid rgba(18, 32, 45, 0.08);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .brand-lockup {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-mark {
+            width: 46px;
+            height: 46px;
+            border-radius: 16px;
+            background: var(--accent);
+            box-shadow: 0 12px 28px rgba(0, 184, 230, 0.24);
+            position: relative;
+        }
+
+        .brand-mark::after {
+            content: "";
+            position: absolute;
+            inset: 9px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.86);
+            clip-path: polygon(0 100%, 0 36%, 38% 36%, 38% 0, 100% 0, 100% 62%, 62% 62%, 62% 100%);
+        }
+
+        .brand-name {
+            font-size: 1.06rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-subtitle {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .route-badge {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(0, 184, 230, 0.10);
+            border: 1px solid rgba(0, 184, 230, 0.12);
+            color: #007d9d;
+            font-size: 0.84rem;
+            font-weight: 700;
         }
 
         .hero {
             max-width: 1200px;
             margin: 0 auto 24px;
-            padding: 30px 30px 22px;
+            padding: 32px 32px 24px;
             border: 1px solid var(--border);
             border-radius: 28px;
-            background: rgba(22, 28, 26, 0.54);
+            background:
+                linear-gradient(135deg, rgba(0, 184, 230, 0.10), rgba(26, 217, 190, 0.10) 42%, rgba(255,255,255,0.96) 42%),
+                rgba(255,255,255,0.96);
             box-shadow: var(--shadow);
-            backdrop-filter: blur(14px);
+            backdrop-filter: blur(18px);
         }
 
         .hero-top {
@@ -245,50 +310,50 @@ def dashboard():
             gap: 10px;
             padding: 8px 14px;
             border-radius: 999px;
-            background: rgba(234, 218, 193, 0.10);
-            border: 1px solid rgba(234, 218, 193, 0.18);
+            background: rgba(0, 184, 230, 0.08);
+            border: 1px solid rgba(0, 184, 230, 0.12);
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.16em;
-            color: var(--sand);
+            color: #007d9d;
         }
 
         .eyebrow-dot {
             width: 9px;
             height: 9px;
             border-radius: 50%;
-            background: var(--amber);
-            box-shadow: 0 0 0 6px rgba(211, 154, 77, 0.15);
+            background: var(--green);
+            box-shadow: 0 0 0 6px rgba(0, 204, 102, 0.12);
         }
 
         .title {
             margin: 16px 0 10px;
-            font-family: "Fraunces", serif;
-            font-size: clamp(2.5rem, 6vw, 4.8rem);
-            line-height: 0.95;
-            letter-spacing: -0.04em;
-            max-width: 10ch;
+            font-size: clamp(2.4rem, 5.2vw, 4.3rem);
+            line-height: 0.98;
+            letter-spacing: -0.05em;
+            font-weight: 800;
+            max-width: 12ch;
         }
 
         .subtitle {
             max-width: 62ch;
             margin: 0;
-            color: rgba(248, 242, 232, 0.82);
+            color: var(--muted);
             font-size: 1.02rem;
-            line-height: 1.7;
+            line-height: 1.65;
         }
 
         .clock-wrap {
             min-width: 240px;
             padding: 18px 20px;
             border-radius: 20px;
-            background: rgba(248, 242, 232, 0.10);
-            border: 1px solid rgba(248, 242, 232, 0.18);
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(18, 32, 45, 0.08);
             text-align: right;
         }
 
         .clock-label {
-            color: rgba(248, 242, 232, 0.68);
+            color: var(--muted);
             font-size: 0.75rem;
             letter-spacing: 0.16em;
             text-transform: uppercase;
@@ -299,7 +364,7 @@ def dashboard():
             font-size: clamp(2.1rem, 4vw, 3rem);
             font-weight: 800;
             letter-spacing: 0.06em;
-            color: var(--cream);
+            color: var(--text);
         }
 
         .status-row {
@@ -312,14 +377,14 @@ def dashboard():
         .status-pill {
             padding: 10px 14px;
             border-radius: 999px;
-            background: rgba(248, 242, 232, 0.10);
-            border: 1px solid rgba(248, 242, 232, 0.14);
-            color: rgba(248, 242, 232, 0.9);
+            background: rgba(255, 255, 255, 0.84);
+            border: 1px solid rgba(18, 32, 45, 0.08);
+            color: var(--muted);
             font-size: 0.92rem;
         }
 
         .status-pill strong {
-            color: var(--sand);
+            color: var(--text);
             font-weight: 800;
         }
 
@@ -335,9 +400,9 @@ def dashboard():
         .panel {
             border: 1px solid var(--border);
             border-radius: 28px;
-            background: var(--panel);
+            background: var(--surface);
             box-shadow: var(--shadow);
-            backdrop-filter: blur(16px);
+            backdrop-filter: blur(18px);
             overflow: hidden;
             height: 100%;
         }
@@ -345,23 +410,24 @@ def dashboard():
         .panel-inner { padding: 24px; }
 
         .panel-kicker {
-            color: rgba(234, 218, 193, 0.75);
+            color: #0a8cad;
             font-size: 0.74rem;
             letter-spacing: 0.16em;
             text-transform: uppercase;
             margin-bottom: 10px;
+            font-weight: 700;
         }
 
         .panel-title {
             margin: 0 0 6px;
-            font-family: "Fraunces", serif;
             font-size: 1.7rem;
             line-height: 1.1;
+            font-weight: 800;
         }
 
         .panel-copy {
             margin: 0;
-            color: rgba(248, 242, 232, 0.75);
+            color: var(--muted);
             line-height: 1.6;
         }
 
@@ -384,8 +450,8 @@ def dashboard():
             gap: 12px;
             padding: 14px 16px;
             border-radius: 18px;
-            background: rgba(248, 242, 232, 0.10);
-            border: 1px solid rgba(248, 242, 232, 0.08);
+            background: var(--surface-soft);
+            border: 1px solid rgba(18, 32, 45, 0.06);
         }
 
         .departure-destination {
@@ -399,14 +465,14 @@ def dashboard():
             border-radius: 999px;
             text-align: center;
             font-weight: 800;
-            color: var(--ink);
-            background: linear-gradient(135deg, var(--sand), #f0c783);
+            color: white;
+            background: var(--accent);
         }
 
         .departure-time {
             min-width: 62px;
             text-align: right;
-            color: var(--sand);
+            color: #0387a8;
             font-weight: 700;
         }
 
@@ -414,16 +480,16 @@ def dashboard():
             margin-top: 18px;
             padding: 16px 18px;
             border-radius: 18px;
-            color: rgba(248, 242, 232, 0.78);
-            background: rgba(248, 242, 232, 0.08);
-            border: 1px solid rgba(248, 242, 232, 0.08);
+            color: var(--muted);
+            background: var(--surface-soft);
+            border: 1px solid rgba(18, 32, 45, 0.06);
             line-height: 1.6;
         }
 
         .weather-panel {
             background:
-                linear-gradient(180deg, rgba(61, 73, 67, 0.94), rgba(29, 34, 32, 0.92)),
-                rgba(29, 34, 32, 0.92);
+                linear-gradient(180deg, rgba(0, 184, 230, 0.08), rgba(26, 217, 190, 0.12)),
+                rgba(255, 255, 255, 0.98);
         }
 
         .weather-current {
@@ -441,7 +507,7 @@ def dashboard():
 
         .weather-desc {
             font-size: 1.08rem;
-            color: rgba(248, 242, 232, 0.75);
+            color: var(--muted);
         }
 
         .weather-meta {
@@ -451,13 +517,15 @@ def dashboard():
             width: fit-content;
             padding: 10px 14px;
             border-radius: 999px;
-            background: rgba(248, 242, 232, 0.10);
-            border: 1px solid rgba(248, 242, 232, 0.08);
+            background: rgba(0, 184, 230, 0.08);
+            border: 1px solid rgba(0, 184, 230, 0.10);
+            color: #007d9d;
+            font-weight: 700;
         }
 
         .notice-panel {
             grid-column: 1 / -1;
-            background: var(--panel-strong);
+            background: var(--surface-strong);
         }
 
         .notice-header {
@@ -481,8 +549,8 @@ def dashboard():
             gap: 14px;
             padding: 20px;
             border-radius: 22px;
-            background: rgba(248, 242, 232, 0.08);
-            border: 1px solid rgba(248, 242, 232, 0.10);
+            background: linear-gradient(180deg, rgba(0, 184, 230, 0.03), rgba(26, 217, 190, 0.05));
+            border: 1px solid rgba(18, 32, 45, 0.06);
         }
 
         .notice-top {
@@ -505,22 +573,22 @@ def dashboard():
         }
 
         .notice-badge.major {
-            background: rgba(211, 154, 77, 0.18);
-            color: #ffd6a0;
+            background: rgba(0, 184, 230, 0.14);
+            color: #007d9d;
         }
 
         .notice-badge.important {
-            background: rgba(141, 97, 79, 0.22);
-            color: #f5c6b4;
+            background: rgba(26, 217, 190, 0.14);
+            color: #018c79;
         }
 
         .notice-badge.advisory {
-            background: rgba(65, 83, 76, 0.28);
-            color: #cee0d4;
+            background: rgba(0, 204, 102, 0.12);
+            color: #13834a;
         }
 
         .notice-kind {
-            color: rgba(248, 242, 232, 0.72);
+            color: var(--muted);
             font-size: 0.84rem;
             font-weight: 700;
         }
@@ -529,13 +597,13 @@ def dashboard():
             margin: 0;
             font-size: 1.05rem;
             line-height: 1.75;
-            color: var(--cream);
+            color: var(--text);
             flex: 1;
         }
 
         .notice-date {
             margin: -2px 0 0;
-            color: rgba(248, 242, 232, 0.68);
+            color: #007d9d;
             font-size: 0.86rem;
             font-weight: 700;
         }
@@ -549,13 +617,15 @@ def dashboard():
         .notice-chip {
             padding: 8px 10px;
             border-radius: 999px;
-            background: rgba(248, 242, 232, 0.08);
-            border: 1px solid rgba(248, 242, 232, 0.08);
-            color: rgba(248, 242, 232, 0.78);
+            background: rgba(0, 184, 230, 0.06);
+            border: 1px solid rgba(0, 184, 230, 0.10);
+            color: #0a8cad;
             font-size: 0.84rem;
+            font-weight: 700;
         }
 
         @media (max-width: 1100px) {
+            .topbar,
             .hero-top,
             .notice-header {
                 flex-direction: column;
@@ -581,6 +651,7 @@ def dashboard():
                 padding: 14px 14px 24px;
             }
 
+            .topbar,
             .hero,
             .panel {
                 border-radius: 22px;
@@ -662,12 +733,23 @@ def dashboard():
     <div class="grain"></div>
 
     <main class="shell">
+        <header class="topbar">
+            <div class="brand-lockup">
+                <div class="brand-mark" aria-hidden="true"></div>
+                <div>
+                    <div class="brand-name">ConsultantCloud</div>
+                    <div class="brand-subtitle">661A Transport App</div>
+                </div>
+            </div>
+            <div class="route-badge">Brussels Tram 18</div>
+        </header>
+
         <section class="hero">
             <div class="hero-top">
                 <div>
                     <div class="eyebrow">
                         <span class="eyebrow-dot"></span>
-                        Brussels Tram 18
+                        Live commuter view
                     </div>
                     <h1 class="title">661A Transport App</h1>
                     <p class="subtitle">
