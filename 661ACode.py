@@ -24,6 +24,10 @@ STOPS = [
         static_id="0711F",
     ),
 ]
+STOP_HEADINGS = {
+    "5830": "To Work",
+    "0711": "To Home",
+}
 BACKGROUND_FILES = [
     "backgrounds/uccle-street.svg",
     "backgrounds/saint-gilles-rooftops.svg",
@@ -40,6 +44,7 @@ def build_dashboard_context() -> dict[str, object]:
     for stop in STOPS:
         all_departures.append(
             {
+                "heading": STOP_HEADINGS.get(stop.pointid, "Line 18"),
                 "name": stop.label,
                 "pointid": stop.pointid,
                 "departures": departures_by_stop.get(stop.pointid, [])[:3],
@@ -69,7 +74,7 @@ def dashboard():
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Line 18 Departures for Bens and Albert</title>
+    <title>661A Transport App</title>
     <meta http-equiv="refresh" content="60" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#3c4a44" />
@@ -253,7 +258,7 @@ def dashboard():
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 18px;
-            align-items: start;
+            align-items: stretch;
         }
 
         .panel {
@@ -263,6 +268,7 @@ def dashboard():
             box-shadow: var(--shadow);
             backdrop-filter: blur(16px);
             overflow: hidden;
+            height: 100%;
         }
 
         .panel-inner { padding: 24px; }
@@ -291,6 +297,18 @@ def dashboard():
         .stop-card .panel-title {
             font-size: 1.45rem;
             min-height: 3.1rem;
+        }
+
+        .stop-meta {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 4px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(248, 242, 232, 0.08);
+            border: 1px solid rgba(248, 242, 232, 0.10);
+            color: rgba(248, 242, 232, 0.78);
+            font-size: 0.84rem;
         }
 
         .departure-list {
@@ -398,7 +416,7 @@ def dashboard():
         }
 
         .notice-card {
-            min-height: 220px;
+            min-height: 240px;
             display: flex;
             flex-direction: column;
             gap: 14px;
@@ -456,6 +474,13 @@ def dashboard():
             flex: 1;
         }
 
+        .notice-date {
+            margin: -2px 0 0;
+            color: rgba(248, 242, 232, 0.68);
+            font-size: 0.86rem;
+            font-weight: 700;
+        }
+
         .notice-meta {
             display: flex;
             flex-wrap: wrap;
@@ -469,15 +494,6 @@ def dashboard():
             border: 1px solid rgba(248, 242, 232, 0.08);
             color: rgba(248, 242, 232, 0.78);
             font-size: 0.84rem;
-        }
-
-        .footer {
-            max-width: 1200px;
-            margin: 18px auto 0;
-            padding: 0 8px;
-            color: rgba(248, 242, 232, 0.68);
-            font-size: 0.92rem;
-            line-height: 1.7;
         }
 
         @media (max-width: 1100px) {
@@ -643,9 +659,9 @@ def dashboard():
                         <span class="eyebrow-dot"></span>
                         Brussels Tram 18
                     </div>
-                    <h1 class="title">Bens and Albert departures, shaped for the street.</h1>
+                    <h1 class="title">661A Transport App</h1>
                     <p class="subtitle">
-                        Real-time departures for the line 18 corridor between Bens and Albert, with broader STIB traveller notices shown underneath for easier reading when service changes matter.
+                        Live line 18 departures for the Bens and Albert journey, with readable service notices kept visible underneath.
                     </p>
                 </div>
                 <div class="clock-wrap">
@@ -665,9 +681,10 @@ def dashboard():
             {% for stop in all_departures %}
             <article class="panel stop-card">
                 <div class="panel-inner">
-                    <div class="panel-kicker">Stop {{ stop.pointid }}</div>
+                    <div class="panel-kicker">{{ stop.heading }}</div>
                     <h2 class="panel-title">{{ stop.name }}</h2>
-                    <p class="panel-copy">Showing the next three departures currently available from the Belgian Mobility STIB feed.</p>
+                    <div class="stop-meta">Stop {{ stop.pointid }}</div>
+                    <p class="panel-copy">Showing the next three departures currently available.</p>
 
                     {% if stop.departures %}
                     <div class="departure-list">
@@ -708,10 +725,10 @@ def dashboard():
                             <div class="panel-kicker">Traveller information</div>
                             <h2 class="panel-title">Readable disruption notices</h2>
                             <p class="panel-copy">
-                                Notices tied to your journey appear first. When there are none for line 18, the box falls back to the most important current STIB alerts so the space still remains useful.
+                                Notices tied to your journey appear first. When there are none for line 18, the panel falls back to the most important current STIB alerts.
                             </p>
                         </div>
-                        <div class="status-pill">Max 3 notices</div>
+                        <div class="status-pill">Max 6 notices</div>
                     </div>
 
                     {% if traveller_notices %}
@@ -723,6 +740,9 @@ def dashboard():
                                 <div class="notice-kind">{{ notice.relevance_label }}</div>
                             </div>
                             <p class="notice-text">{{ notice.text }}</p>
+                            {% if notice.linked_date %}
+                            <p class="notice-date">Linked date {{ notice.linked_date }}</p>
+                            {% endif %}
                             <div class="notice-meta">
                                 <div class="notice-chip">Type {{ notice.type }}</div>
                                 <div class="notice-chip">Priority {{ notice.priority }}</div>
@@ -745,10 +765,6 @@ def dashboard():
                 </div>
             </section>
         </section>
-
-        <footer class="footer">
-            Data from Belgian Mobility and STIB-MIVB. Built for the current Render service and refreshed every 60 seconds. The legacy Opendatasoft path remains available only as a rollback source.
-        </footer>
     </main>
 </body>
 </html>

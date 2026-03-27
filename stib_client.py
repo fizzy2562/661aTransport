@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -197,6 +198,7 @@ class StibClient:
                 "type": record.get("type") or "Notice",
                 "relevance": relevance,
                 "relevance_label": "For your journey" if relevance else "Across STIB",
+                "linked_date": _extract_notice_linked_date(text),
             }
 
             seen_texts.add(text)
@@ -209,7 +211,7 @@ class StibClient:
         fallback_notices.sort(key=lambda item: (-item["priority"], item["text"]))
 
         selected = relevant_notices if relevant_notices else fallback_notices
-        return selected[:3]
+        return selected[:6]
 
 
 def _load_embedded_json(raw_value: Any) -> list[dict[str, Any]]:
@@ -253,6 +255,19 @@ def _extract_notice_text(raw_content: Any) -> str:
                 chunks.append(localized)
                 break
     return " ".join(chunks).strip()
+
+
+def _extract_notice_linked_date(text: str) -> str | None:
+    patterns = (
+        r"\b(?:from|From)\s+(\d{1,2}\s+[A-Za-z]+|\d{1,2}(?:/\d{1,2})?)\b",
+        r"\b(?:d[eè]s(?:\s+le)?|D[eè]s(?:\s+le)?)\s+(\d{1,2}\s+[A-Za-z]+|\d{1,2}(?:/\d{1,2})?)\b",
+        r"\b(?:vanaf|Vanaf)\s+(\d{1,2}\s+[A-Za-z]+|\d{1,2}(?:/\d{1,2})?)\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1)
+    return None
 
 
 def _priority_label(priority: int) -> str:

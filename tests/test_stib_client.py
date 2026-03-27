@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from stib_client import StopConfig, StibClient, _extract_notice_text
+from stib_client import StopConfig, StibClient, _extract_notice_linked_date, _extract_notice_text
 
 
 class FakeClient(StibClient):
@@ -95,6 +95,7 @@ def test_traveller_notice_prefers_english_and_marks_relevance():
     assert notices[0]["text"] == "Line 18 diversion at Albert"
     assert notices[0]["relevance"] == 3
     assert notices[0]["relevance_label"] == "For your journey"
+    assert notices[0]["linked_date"] is None
 
 
 def test_traveller_notice_falls_back_to_high_priority_network_notice():
@@ -123,9 +124,34 @@ def test_traveller_notice_falls_back_to_high_priority_network_notice():
     assert notices[0]["relevance_label"] == "Across STIB"
 
 
+def test_traveller_notice_list_is_capped_at_six():
+    client = FakeClient(
+        traveller_records=[
+            {
+                "content": f'[{{"text":[{{"en":"Notice {idx}"}}]}}]',
+                "lines": "[]",
+                "points": "[]",
+                "priority": 4,
+                "type": "LongText",
+            }
+            for idx in range(8)
+        ]
+    )
+
+    notices, _ = client.get_traveller_notices("18", STOPS)
+
+    assert len(notices) == 6
+
+
 def test_extract_notice_text_joins_unique_sections():
     text = _extract_notice_text(
         '[{"text":[{"en":"First alert"},{"fr":"Premier avis"}]},{"text":[{"en":"Second alert"}]}]'
     )
 
     assert text == "First alert Second alert"
+
+
+def test_extract_notice_linked_date_handles_multilingual_prefixes():
+    assert _extract_notice_linked_date("Works. From 6 Jan, line diverted.") == "6 Jan"
+    assert _extract_notice_linked_date("Travaux. Dès le 6/1, ligne déviée.") == "6/1"
+    assert _extract_notice_linked_date("Werken. Vanaf 7/2, halte verplaatst.") == "7/2"
