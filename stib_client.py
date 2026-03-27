@@ -170,11 +170,11 @@ class StibClient:
         static_ids = {stop.static_id for stop in stops if stop.static_id}
         relevant_notices: list[dict[str, Any]] = []
         fallback_notices: list[dict[str, Any]] = []
-        seen_texts: set[str] = set()
+        seen_notice_keys: set[str] = set()
 
         for record in records:
             text = _clean_notice_text(_extract_notice_text(record.get("content")))
-            if not text or text in seen_texts:
+            if not text:
                 continue
             if not _is_actionable_notice(text):
                 continue
@@ -182,8 +182,13 @@ class StibClient:
             lines = [line.get("id", "") for line in _load_embedded_json(record.get("lines"))]
             points = [point.get("id", "") for point in _load_embedded_json(record.get("points"))]
             priority = int(record.get("priority") or 0)
+            if priority < 5:
+                continue
             matched_lines = [line for line in lines if line in allowed_lines]
             if not matched_lines:
+                continue
+            notice_key = _notice_validation_key(text, matched_lines)
+            if notice_key in seen_notice_keys:
                 continue
 
             line_match = bool(matched_lines)
@@ -206,7 +211,7 @@ class StibClient:
                 "linked_date": _extract_notice_linked_date(text),
             }
 
-            seen_texts.add(text)
+            seen_notice_keys.add(notice_key)
             if relevance:
                 relevant_notices.append(notice)
             else:
@@ -297,6 +302,13 @@ def _extract_notice_linked_date(text: str) -> str | None:
         if match:
             return match.group(1)
     return None
+
+
+def _notice_validation_key(text: str, matched_lines: list[str]) -> str:
+    sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text) if part.strip()]
+    headline = " ".join(sentences[:2]) if len(sentences) >= 2 else text
+    normalized = re.sub(r"[^a-z0-9]+", " ", headline.lower()).strip()
+    return f"{','.join(sorted(matched_lines))}:{normalized}"
 
 
 def _priority_label(priority: int) -> str:
