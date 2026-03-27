@@ -94,7 +94,7 @@ def test_traveller_notice_prefers_english_and_marks_relevance():
     assert error is None
     assert notices[0]["text"] == "Line 18 diversion at Albert"
     assert notices[0]["relevance"] == 3
-    assert notices[0]["relevance_label"] == "For your journey"
+    assert notices[0]["scope_label"] == "For your route"
     assert notices[0]["linked_date"] is None
 
 
@@ -121,7 +121,7 @@ def test_traveller_notice_falls_back_to_high_priority_network_notice():
     notices, _ = client.get_traveller_notices("18", STOPS)
 
     assert notices[0]["text"] == "High priority network notice"
-    assert notices[0]["relevance_label"] == "Across STIB"
+    assert notices[0]["scope_label"] == "Network alert"
 
 
 def test_traveller_notice_list_is_capped_at_six():
@@ -141,6 +141,32 @@ def test_traveller_notice_list_is_capped_at_six():
     notices, _ = client.get_traveller_notices("18", STOPS)
 
     assert len(notices) == 6
+
+
+def test_traveller_notice_filters_generic_messages_and_cleans_spacing():
+    client = FakeClient(
+        traveller_records=[
+            {
+                "content": '[{"text":[{"fr":"Bon voyage sur nos lignes."}]}]',
+                "lines": "[]",
+                "points": "[]",
+                "priority": 9,
+                "type": "LongText",
+            },
+            {
+                "content": '[{"text":[{"en":"Works. Stop moved.Stop now on avenue Brugmann."}]}]',
+                "lines": '[{"id":"18"}]',
+                "points": "[]",
+                "priority": 6,
+                "type": "LongText",
+            },
+        ]
+    )
+
+    notices, _ = client.get_traveller_notices("18", STOPS)
+
+    assert len(notices) == 1
+    assert notices[0]["text"] == "Works. Stop moved. Stop now on avenue Brugmann."
 
 
 def test_extract_notice_text_joins_unique_sections():

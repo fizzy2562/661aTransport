@@ -1,12 +1,15 @@
+import logging
 import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+import requests
 from flask import Flask, jsonify, render_template_string, url_for
 
 from stib_client import StopConfig, StibClient
 
 app = Flask(__name__)
+LOGGER = logging.getLogger(__name__)
 
 BRUSSELS = ZoneInfo("Europe/Brussels")
 LINE_ID = "18"
@@ -28,25 +31,92 @@ STOP_HEADINGS = {
     "5830": "To Work",
     "0711": "To Home",
 }
+STOP_NAMES = {
+    "5830": "Bens",
+    "0711": "Albert",
+}
+STOP_DIRECTIONS = {
+    "5830": "Towards Albert",
+    "0711": "Towards Van Haelen",
+}
 BACKGROUND_FILES = [
     "backgrounds/uccle-street.svg",
     "backgrounds/saint-gilles-rooftops.svg",
     "backgrounds/forest-tramline.svg",
 ]
+WEATHER_URL = (
+    "https://api.open-meteo.com/v1/forecast"
+    "?latitude=50.8073&longitude=4.3368&current_weather=true"
+)
+WEATHER_LABELS = {
+    0: "Sunny",
+    1: "Mostly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Foggy",
+    48: "Foggy",
+    51: "Light drizzle",
+    53: "Drizzle",
+    55: "Heavy drizzle",
+    56: "Freezing drizzle",
+    57: "Freezing drizzle",
+    61: "Light rain",
+    63: "Rain",
+    65: "Heavy rain",
+    66: "Freezing rain",
+    67: "Freezing rain",
+    71: "Light snow",
+    73: "Snow",
+    75: "Heavy snow",
+    77: "Snow grains",
+    80: "Rain showers",
+    81: "Rain showers",
+    82: "Heavy showers",
+    85: "Snow showers",
+    86: "Snow showers",
+    95: "Thunderstorm",
+    96: "Thunderstorm",
+    99: "Thunderstorm",
+}
+
+
+def get_weather_snapshot() -> dict[str, str]:
+    try:
+        response = requests.get(WEATHER_URL, timeout=10)
+        response.raise_for_status()
+        payload = response.json()
+        current = payload.get("current_weather") or {}
+        temperature = current.get("temperature")
+        weather_code = current.get("weathercode")
+        if temperature is None:
+            raise ValueError("Missing current weather temperature")
+        return {
+            "temperature": f"{round(float(temperature))} C",
+            "description": WEATHER_LABELS.get(weather_code, "Current conditions"),
+            "meta": "Live in Uccle",
+        }
+    except Exception:
+        LOGGER.exception("Unable to load weather snapshot")
+        return {
+            "temperature": "--",
+            "description": "Weather unavailable",
+            "meta": "Weather service offline",
+        }
 
 
 def build_dashboard_context() -> dict[str, object]:
     client = StibClient()
     departures_by_stop, departures_error = client.get_departures_for_stops(LINE_ID, STOPS)
     traveller_notices, notices_error = client.get_traveller_notices(LINE_ID, STOPS)
+    weather = get_weather_snapshot()
 
     all_departures = []
     for stop in STOPS:
         all_departures.append(
             {
                 "heading": STOP_HEADINGS.get(stop.pointid, "Line 18"),
-                "name": stop.label,
-                "pointid": stop.pointid,
+                "name": STOP_NAMES.get(stop.pointid, stop.pointid),
+                "direction": STOP_DIRECTIONS.get(stop.pointid, stop.label.title()),
                 "departures": departures_by_stop.get(stop.pointid, [])[:3],
             }
         )
@@ -59,6 +129,7 @@ def build_dashboard_context() -> dict[str, object]:
         "background_urls": [url_for("static", filename=path) for path in BACKGROUND_FILES],
         "data_source": os.getenv("STIB_DATA_SOURCE", "belgian_mobility"),
         "updated_at": datetime.now(BRUSSELS).strftime("%H:%M:%S"),
+        "weather": weather,
     }
 
 
@@ -299,18 +370,6 @@ def dashboard():
             min-height: 3.1rem;
         }
 
-        .stop-meta {
-            display: inline-flex;
-            align-items: center;
-            margin-top: 4px;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: rgba(248, 242, 232, 0.08);
-            border: 1px solid rgba(248, 242, 232, 0.10);
-            color: rgba(248, 242, 232, 0.78);
-            font-size: 0.84rem;
-        }
-
         .departure-list {
             display: flex;
             flex-direction: column;
@@ -549,37 +608,6 @@ def dashboard():
     </style>
     <script>
         const backgroundUrls = {{ background_urls|tojson }};
-        const weatherIcons = {
-            0: "Sun",
-            1: "Clear",
-            2: "Clouds",
-            3: "Overcast",
-            45: "Fog",
-            48: "Fog",
-            51: "Drizzle",
-            53: "Drizzle",
-            55: "Drizzle",
-            56: "Sleet",
-            57: "Sleet",
-            61: "Rain",
-            63: "Rain",
-            65: "Rain",
-            66: "Rain",
-            67: "Rain",
-            71: "Snow",
-            73: "Snow",
-            75: "Snow",
-            77: "Snow",
-            80: "Showers",
-            81: "Showers",
-            82: "Showers",
-            85: "Snow",
-            86: "Snow",
-            95: "Storm",
-            96: "Storm",
-            99: "Storm"
-        };
-
         function updateClock() {
             const now = new Date();
             const h = String(now.getHours()).padStart(2, "0");
@@ -587,22 +615,6 @@ def dashboard():
             const s = String(now.getSeconds()).padStart(2, "0");
             document.getElementById("clock").textContent = h + ":" + m + ":" + s;
             document.getElementById("nextrefresh").textContent = (60 - now.getSeconds()) + "s";
-        }
-
-        function updateWeather() {
-            fetch("https://api.open-meteo.com/v1/forecast?latitude=50.8073&longitude=4.3368&current_weather=true")
-                .then((response) => response.json())
-                .then((data) => {
-                    if (!data || !data.current_weather) {
-                        return;
-                    }
-                    const weather = data.current_weather;
-                    document.getElementById("weather-temp").textContent = Math.round(weather.temperature) + " C";
-                    document.getElementById("weather-desc").textContent = weatherIcons[weather.weathercode] || "Conditions";
-                })
-                .catch(() => {
-                    document.getElementById("weather-desc").textContent = "Weather unavailable";
-                });
         }
 
         function setupBackgroundRotation() {
@@ -638,10 +650,8 @@ def dashboard():
 
         window.addEventListener("load", function () {
             updateClock();
-            updateWeather();
             setupBackgroundRotation();
             setInterval(updateClock, 1000);
-            setInterval(updateWeather, 300000);
         });
     </script>
 </head>
@@ -661,7 +671,7 @@ def dashboard():
                     </div>
                     <h1 class="title">661A Transport App</h1>
                     <p class="subtitle">
-                        Live line 18 departures for the Bens and Albert journey, with readable service notices kept visible underneath.
+                        Live line 18 departures between Bens and Albert, with clear service updates underneath.
                     </p>
                 </div>
                 <div class="clock-wrap">
@@ -672,7 +682,7 @@ def dashboard():
 
             <div class="status-row">
                 <div class="status-pill">Auto refresh in <strong id="nextrefresh">60s</strong></div>
-                <div class="status-pill">Source <strong>{{ data_source.replace('_', ' ') }}</strong></div>
+                <div class="status-pill">Source <strong>{{ data_source|replace('_', ' ')|title }}</strong></div>
                 <div class="status-pill">Updated at <strong>{{ updated_at }}</strong></div>
             </div>
         </section>
@@ -683,8 +693,7 @@ def dashboard():
                 <div class="panel-inner">
                     <div class="panel-kicker">{{ stop.heading }}</div>
                     <h2 class="panel-title">{{ stop.name }}</h2>
-                    <div class="stop-meta">Stop {{ stop.pointid }}</div>
-                    <p class="panel-copy">Showing the next three departures currently available.</p>
+                    <p class="panel-copy">{{ stop.direction }}</p>
 
                     {% if stop.departures %}
                     <div class="departure-list">
@@ -711,9 +720,9 @@ def dashboard():
                     <h2 class="panel-title">Uccle conditions</h2>
                     <p class="panel-copy">Current weather near the tram corridor.</p>
                     <div class="weather-current">
-                        <div class="weather-meta">Open-Meteo live</div>
-                        <div id="weather-temp" class="weather-temp">-- C</div>
-                        <div id="weather-desc" class="weather-desc">Loading conditions...</div>
+                        <div class="weather-meta">{{ weather.meta }}</div>
+                        <div id="weather-temp" class="weather-temp">{{ weather.temperature }}</div>
+                        <div id="weather-desc" class="weather-desc">{{ weather.description }}</div>
                     </div>
                 </div>
             </aside>
@@ -723,12 +732,12 @@ def dashboard():
                     <div class="notice-header">
                         <div>
                             <div class="panel-kicker">Traveller information</div>
-                            <h2 class="panel-title">Readable disruption notices</h2>
+                            <h2 class="panel-title">Service updates</h2>
                             <p class="panel-copy">
-                                Notices tied to your journey appear first. When there are none for line 18, the panel falls back to the most important current STIB alerts.
+                                Updates affecting your route appear first. If none are active, this panel shows the most important current STIB alerts.
                             </p>
                         </div>
-                        <div class="status-pill">Max 6 notices</div>
+                        <div class="status-pill">Up to 6 updates</div>
                     </div>
 
                     {% if traveller_notices %}
@@ -737,23 +746,23 @@ def dashboard():
                         <article class="notice-card">
                             <div class="notice-top">
                                 <div class="notice-badge {{ notice.priority_tone }}">{{ notice.priority_label }}</div>
-                                <div class="notice-kind">{{ notice.relevance_label }}</div>
+                                <div class="notice-kind">{{ notice.scope_label }}</div>
                             </div>
                             <p class="notice-text">{{ notice.text }}</p>
                             {% if notice.linked_date %}
-                            <p class="notice-date">Linked date {{ notice.linked_date }}</p>
+                            <p class="notice-date">Effective from {{ notice.linked_date }}</p>
                             {% endif %}
+                            {% if notice.lines %}
                             <div class="notice-meta">
-                                <div class="notice-chip">Type {{ notice.type }}</div>
-                                <div class="notice-chip">Priority {{ notice.priority }}</div>
                                 <div class="notice-chip">
-                                    {% if notice.lines %}
-                                        Lines {{ notice.lines|join(', ') }}
+                                    {% if notice.lines|length == 1 %}
+                                        Line {{ notice.lines[0] }}
                                     {% else %}
-                                        Network-wide notice
+                                        Lines {{ notice.lines|join(', ') }}
                                     {% endif %}
                                 </div>
                             </div>
+                            {% endif %}
                         </article>
                         {% endfor %}
                     </div>

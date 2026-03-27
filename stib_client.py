@@ -172,8 +172,10 @@ class StibClient:
         seen_texts: set[str] = set()
 
         for record in records:
-            text = _extract_notice_text(record.get("content"))
+            text = _clean_notice_text(_extract_notice_text(record.get("content")))
             if not text or text in seen_texts:
+                continue
+            if not _is_actionable_notice(text):
                 continue
 
             lines = [line.get("id", "") for line in _load_embedded_json(record.get("lines"))]
@@ -195,9 +197,8 @@ class StibClient:
                 "priority_tone": _priority_tone(priority),
                 "lines": [line for line in lines if line],
                 "points": [point for point in points if point],
-                "type": record.get("type") or "Notice",
                 "relevance": relevance,
-                "relevance_label": "For your journey" if relevance else "Across STIB",
+                "scope_label": _scope_label(line_id, lines, relevance),
                 "linked_date": _extract_notice_linked_date(text),
             }
 
@@ -255,6 +256,32 @@ def _extract_notice_text(raw_content: Any) -> str:
                 chunks.append(localized)
                 break
     return " ".join(chunks).strip()
+
+
+def _clean_notice_text(text: str) -> str:
+    cleaned = re.sub(r"(?<=[.!?])(?=[A-Z])", " ", text)
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned.strip()
+
+
+def _is_actionable_notice(text: str) -> bool:
+    lowered = text.strip().lower()
+    ignored_prefixes = (
+        "bon voyage",
+        "goede reis",
+        "have a nice trip",
+    )
+    return not lowered.startswith(ignored_prefixes)
+
+
+def _scope_label(line_id: str, lines: list[str], relevance: int) -> str:
+    if relevance:
+        return "For your route"
+    if line_id in lines:
+        return f"Line {line_id}"
+    if lines:
+        return "Lines " + ", ".join(lines[:3])
+    return "Network alert"
 
 
 def _extract_notice_linked_date(text: str) -> str | None:
