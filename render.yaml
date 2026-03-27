@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: 661aTransport
+    runtime: python
+    repo: https://github.com/fizzy2562/661aTransport
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT 661ACode:app
+    healthCheckPath: /healthz
+    plan: free
+    envVars:
+      - key: BELGIAN_MOBILITY_BASE_URL
+        value: https://api-management-discovery-production.azure-api.net/api/datasets/stibmivb
+      - key: BELGIAN_MOBILITY_SUBSCRIPTION_KEY
+        sync: false
+      - key: BELGIAN_MOBILITY_SECONDARY_KEY
+        sync: false
+      - key: STIB_DATA_SOURCE
+        value: belgian_mobility
+      - key: STIB_API_KEY
+        sync: false

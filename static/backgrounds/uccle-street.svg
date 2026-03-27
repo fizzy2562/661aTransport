@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Uccle street scene</title>
+  <desc id="desc">A warm illustrated street scene inspired by Uccle rooftops and evening light.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#d9b68f"/>
+      <stop offset="55%" stop-color="#d69268"/>
+      <stop offset="100%" stop-color="#5b4a55"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#394840"/>
+      <stop offset="100%" stop-color="#1d2623"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <circle cx="1240" cy="190" r="118" fill="#f3d8a6" opacity="0.7"/>
+  <rect y="540" width="1600" height="360" fill="#31413a"/>
+  <polygon points="0,650 470,470 910,545 1600,465 1600,900 0,900" fill="url(#road)"/>
+  <polygon points="0,620 210,470 420,505 300,620" fill="#6e584f"/>
+  <polygon points="240,620 415,455 645,490 520,620" fill="#835c4f"/>
+  <polygon points="540,620 760,425 960,470 835,620" fill="#98705f"/>
+  <polygon points="835,620 1060,430 1280,485 1140,620" fill="#7a5b50"/>
+  <polygon points="1120,620 1320,455 1540,505 1410,620" fill="#5c4c49"/>
+  <rect x="112" y="555" width="72" height="65" fill="#e6d5b7" opacity="0.65"/>
+  <rect x="335" y="535" width="66" height="62" fill="#f0ddbc" opacity="0.6"/>
+  <rect x="602" y="515" width="60" height="58" fill="#f3e4c8" opacity="0.58"/>
+  <rect x="886" y="518" width="64" height="59" fill="#efddc0" opacity="0.6"/>
+  <rect x="1180" y="540" width="62" height="57" fill="#ebd5b4" opacity="0.64"/>
+  <path d="M1070 734c86-32 155-95 204-177" stroke="#d8b484" stroke-width="8" stroke-linecap="round" opacity="0.35"/>
+  <path d="M1115 812c110-40 202-120 264-222" stroke="#d8b484" stroke-width="8" stroke-linecap="round" opacity="0.25"/>
+  <rect x="710" y="610" width="26" height="150" fill="#d4c2a3"/>
+  <rect x="702" y="753" width="42" height="10" rx="4" fill="#c2a986"/>
+  <circle cx="723" cy="607" r="28" fill="#e7c78c" opacity="0.55"/>
+</svg>
