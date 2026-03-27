@@ -43,7 +43,7 @@ Do not commit live keys into the repository.
 
 ## Vercel
 
-This app now supports Vercel's Flask runtime through [app.py](/tmp/661aTransport-review/app.py). Static assets are duplicated under `public/static/**` for Vercel CDN delivery.
+This app now supports Vercel's Flask runtime through `api/index.py`, with `vercel.json` rewrites for `/` and `/healthz`. Static assets are duplicated under `public/static/**` for Vercel CDN delivery.
 
 Typical setup:
 
