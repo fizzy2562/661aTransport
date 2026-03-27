@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Forest tramline</title>
+  <desc id="desc">An illustrated Brussels tram corridor with trees, rails, and evening light.</desc>
+  <defs>
+    <linearGradient id="evening" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ddbe98"/>
+      <stop offset="48%" stop-color="#cb815c"/>
+      <stop offset="100%" stop-color="#273632"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#evening)"/>
+  <rect y="610" width="1600" height="290" fill="#1a2422"/>
+  <path d="M0 686c286-31 544-149 800-149s514 118 800 149v214H0z" fill="#2f413a"/>
+  <path d="M365 900 710 566h78L442 900z" fill="#889088"/>
+  <path d="M542 900 836 566h52L594 900z" fill="#b1ab97"/>
+  <path d="M752 900 1030 566h34L786 900z" fill="#82776c"/>
+  <path d="M890 900 1136 566h34L924 900z" fill="#b2a489"/>
+  <path d="M743 900 760 566h37L780 900z" fill="#f2ead8" opacity="0.5"/>
+  <rect x="258" y="434" width="340" height="136" rx="22" fill="#7d5f57"/>
+  <rect x="318" y="467" width="90" height="58" rx="10" fill="#f0e0c1" opacity="0.72"/>
+  <rect x="442" y="467" width="90" height="58" rx="10" fill="#f0e0c1" opacity="0.72"/>
+  <rect x="598" y="334" width="14" height="252" fill="#dac39d" opacity="0.7"/>
+  <circle cx="605" cy="322" r="28" fill="#f4d9a6" opacity="0.48"/>
+  <g>
+    <rect x="1080" y="465" width="28" height="160" fill="#473935"/>
+    <circle cx="1094" cy="430" r="58" fill="#425247"/>
+    <circle cx="1052" cy="468" r="46" fill="#506457"/>
+    <circle cx="1143" cy="477" r="42" fill="#5b705f"/>
+  </g>
+  <g>
+    <rect x="1250" y="455" width="22" height="155" fill="#493a36"/>
+    <circle cx="1261" cy="423" r="54" fill="#46584b"/>
+    <circle cx="1218" cy="461" r="44" fill="#506457"/>
+    <circle cx="1311" cy="463" r="41" fill="#66755f"/>
+  </g>
+  <g>
+    <rect x="150" y="465" width="26" height="160" fill="#493a36"/>
+    <circle cx="163" cy="434" r="56" fill="#46584b"/>
+    <circle cx="118" cy="477" r="44" fill="#52675a"/>
+    <circle cx="212" cy="476" r="42" fill="#65745f"/>
+  </g>
+</svg>
