@@ -3,7 +3,6 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-import requests
 from flask import Flask, jsonify, render_template_string, url_for
 
 from stib_client import StopConfig, StibClient
@@ -13,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 BRUSSELS = ZoneInfo("Europe/Brussels")
 LINE_ID = "18"
-STOPS = [
+LINE18_STOPS = [
     StopConfig(
         label="in the direction of ALBERT",
         pointid="5830",
@@ -27,109 +26,75 @@ STOPS = [
         static_id="0711F",
     ),
 ]
-STOP_HEADINGS = {
-    "5830": "To Work",
-    "0711": "To Home",
-}
-STOP_NAMES = {
-    "5830": "Bens",
-    "0711": "Albert",
-}
-STOP_DIRECTIONS = {
-    "5830": "Towards Albert",
-    "0711": "Towards Van Haelen",
-}
+HEROS_STOP = StopConfig(
+    label="Towards Gare du Nord and Gare de Schaerbeek",
+    pointid="5058",
+    destination="GARE DU NORD",
+    static_id="5058F",
+)
+MONITORED_NOTICE_LINES = ["1", "2", "5", "6", "18", "4", "10", "92"]
 BACKGROUND_FILES = [
     "backgrounds/uccle-street.svg",
     "backgrounds/saint-gilles-rooftops.svg",
     "backgrounds/forest-tramline.svg",
 ]
-WEATHER_URL = (
-    "https://api.open-meteo.com/v1/forecast"
-    "?latitude=50.8073&longitude=4.3368&current_weather=true"
-)
-WEATHER_LABELS = {
-    0: "Sunny",
-    1: "Mostly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Foggy",
-    48: "Foggy",
-    51: "Light drizzle",
-    53: "Drizzle",
-    55: "Heavy drizzle",
-    56: "Freezing drizzle",
-    57: "Freezing drizzle",
-    61: "Light rain",
-    63: "Rain",
-    65: "Heavy rain",
-    66: "Freezing rain",
-    67: "Freezing rain",
-    71: "Light snow",
-    73: "Snow",
-    75: "Heavy snow",
-    77: "Snow grains",
-    80: "Rain showers",
-    81: "Rain showers",
-    82: "Heavy showers",
-    85: "Snow showers",
-    86: "Snow showers",
-    95: "Thunderstorm",
-    96: "Thunderstorm",
-    99: "Thunderstorm",
-}
-
-
-def get_weather_snapshot() -> dict[str, str]:
-    try:
-        response = requests.get(WEATHER_URL, timeout=10)
-        response.raise_for_status()
-        payload = response.json()
-        current = payload.get("current_weather") or {}
-        temperature = current.get("temperature")
-        weather_code = current.get("weathercode")
-        if temperature is None:
-            raise ValueError("Missing current weather temperature")
-        return {
-            "temperature": f"{round(float(temperature))} C",
-            "description": WEATHER_LABELS.get(weather_code, "Current conditions"),
-            "meta": "Live in Uccle",
-        }
-    except Exception:
-        LOGGER.exception("Unable to load weather snapshot")
-        return {
-            "temperature": "--",
-            "description": "Weather unavailable",
-            "meta": "Weather service offline",
-        }
 
 
 def build_dashboard_context() -> dict[str, object]:
     client = StibClient()
-    departures_by_stop, departures_error = client.get_departures_for_stops(LINE_ID, STOPS)
-    traveller_notices, notices_error = client.get_traveller_notices(LINE_ID, STOPS)
-    weather = get_weather_snapshot()
+    departures_by_stop, departures_error = client.get_departures_for_stops(LINE_ID, LINE18_STOPS)
+    heros_line4, heros_line4_error = client.get_departures_for_stops("4", [HEROS_STOP])
+    heros_line92, heros_line92_error = client.get_departures_for_stops("92", [HEROS_STOP])
+    traveller_notices, notices_error = client.get_traveller_notices(
+        MONITORED_NOTICE_LINES,
+        LINE18_STOPS + [HEROS_STOP],
+    )
 
-    all_departures = []
-    for stop in STOPS:
-        all_departures.append(
-            {
-                "heading": STOP_HEADINGS.get(stop.pointid, "Line 18"),
-                "name": STOP_NAMES.get(stop.pointid, stop.pointid),
-                "direction": STOP_DIRECTIONS.get(stop.pointid, stop.label.title()),
-                "departures": departures_by_stop.get(stop.pointid, [])[:3],
-            }
-        )
+    all_departures = [
+        {
+            "heading": "To Work",
+            "name": "Bens",
+            "direction": "Towards Albert",
+            "display_mode": "single",
+            "departures": departures_by_stop.get("5830", [])[:3],
+            "error": departures_error,
+        },
+        {
+            "heading": "To Home",
+            "name": "Albert",
+            "direction": "Towards Van Haelen",
+            "display_mode": "single",
+            "departures": departures_by_stop.get("0711", [])[:3],
+            "error": departures_error,
+        },
+        {
+            "heading": "Heros",
+            "name": "Heros / Helden",
+            "direction": "Lines 4 and 92 towards Gare du Nord and Gare de Schaerbeek",
+            "display_mode": "grouped",
+            "error": heros_line4_error or heros_line92_error,
+            "line_groups": [
+                {
+                    "line_id": "4",
+                    "label": "Gare du Nord",
+                    "departures": heros_line4.get(HEROS_STOP.pointid, [])[:2],
+                },
+                {
+                    "line_id": "92",
+                    "label": "Gare de Schaerbeek",
+                    "departures": heros_line92.get(HEROS_STOP.pointid, [])[:2],
+                },
+            ],
+        },
+    ]
 
     return {
         "all_departures": all_departures,
-        "departures_error": departures_error,
         "traveller_notices": traveller_notices,
         "notices_error": notices_error,
         "background_urls": [url_for("static", filename=path) for path in BACKGROUND_FILES],
         "data_source": os.getenv("STIB_DATA_SOURCE", "belgian_mobility"),
         "updated_at": datetime.now(BRUSSELS).strftime("%H:%M:%S"),
-        "weather": weather,
     }
 
 
@@ -219,68 +184,6 @@ def dashboard():
             z-index: 3;
             min-height: 100vh;
             padding: 22px 18px 30px;
-        }
-
-        .topbar {
-            max-width: 1200px;
-            margin: 0 auto 18px;
-            padding: 16px 22px;
-            border: 1px solid rgba(18, 32, 45, 0.08);
-            border-radius: 24px;
-            background: rgba(255, 255, 255, 0.92);
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(18px);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 18px;
-        }
-
-        .brand-lockup {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .brand-mark {
-            width: 46px;
-            height: 46px;
-            border-radius: 16px;
-            background: var(--accent);
-            box-shadow: 0 12px 28px rgba(0, 184, 230, 0.24);
-            position: relative;
-        }
-
-        .brand-mark::after {
-            content: "";
-            position: absolute;
-            inset: 9px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.86);
-            clip-path: polygon(0 100%, 0 36%, 38% 36%, 38% 0, 100% 0, 100% 62%, 62% 62%, 62% 100%);
-        }
-
-        .brand-name {
-            font-size: 1.06rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-        }
-
-        .brand-subtitle {
-            margin-top: 3px;
-            color: var(--muted);
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .route-badge {
-            padding: 10px 14px;
-            border-radius: 999px;
-            background: rgba(0, 184, 230, 0.10);
-            border: 1px solid rgba(0, 184, 230, 0.12);
-            color: #007d9d;
-            font-size: 0.84rem;
-            font-weight: 700;
         }
 
         .hero {
@@ -486,40 +389,72 @@ def dashboard():
             line-height: 1.6;
         }
 
-        .weather-panel {
-            background:
-                linear-gradient(180deg, rgba(0, 184, 230, 0.08), rgba(26, 217, 190, 0.12)),
-                rgba(255, 255, 255, 0.98);
-        }
-
-        .weather-current {
+        .line-groups {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
             margin-top: 22px;
         }
 
-        .weather-temp {
-            font-size: clamp(3rem, 5vw, 4rem);
-            font-weight: 800;
-            line-height: 1;
+        .line-group {
+            padding: 16px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(0, 184, 230, 0.04), rgba(26, 217, 190, 0.06));
+            border: 1px solid rgba(18, 32, 45, 0.06);
         }
 
-        .weather-desc {
-            font-size: 1.08rem;
-            color: var(--muted);
+        .line-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
-        .weather-meta {
+        .line-pill {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            width: fit-content;
-            padding: 10px 14px;
+            padding: 8px 12px;
             border-radius: 999px;
-            background: rgba(0, 184, 230, 0.08);
-            border: 1px solid rgba(0, 184, 230, 0.10);
+            background: var(--accent);
+            color: white;
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+        }
+
+        .line-group-title {
             color: #007d9d;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .line-departures {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .line-departure {
+            display: grid;
+            grid-template-columns: auto auto;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(18, 32, 45, 0.05);
+        }
+
+        .line-minutes {
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .line-time {
+            color: var(--muted);
             font-weight: 700;
         }
 
@@ -625,7 +560,6 @@ def dashboard():
         }
 
         @media (max-width: 1100px) {
-            .topbar,
             .hero-top,
             .notice-header {
                 flex-direction: column;
@@ -651,7 +585,6 @@ def dashboard():
                 padding: 14px 14px 24px;
             }
 
-            .topbar,
             .hero,
             .panel {
                 border-radius: 22px;
@@ -733,17 +666,6 @@ def dashboard():
     <div class="grain"></div>
 
     <main class="shell">
-        <header class="topbar">
-            <div class="brand-lockup">
-                <div class="brand-mark" aria-hidden="true"></div>
-                <div>
-                    <div class="brand-name">ConsultantCloud</div>
-                    <div class="brand-subtitle">661A Transport App</div>
-                </div>
-            </div>
-            <div class="route-badge">Brussels Tram 18</div>
-        </header>
-
         <section class="hero">
             <div class="hero-top">
                 <div>
@@ -777,7 +699,32 @@ def dashboard():
                     <h2 class="panel-title">{{ stop.name }}</h2>
                     <p class="panel-copy">{{ stop.direction }}</p>
 
-                    {% if stop.departures %}
+                    {% if stop.display_mode == "grouped" %}
+                    <div class="line-groups">
+                        {% for group in stop.line_groups %}
+                        <section class="line-group">
+                            <div class="line-group-header">
+                                <div class="line-pill">Line {{ group.line_id }}</div>
+                                <div class="line-group-title">{{ group.label }}</div>
+                            </div>
+                            {% if group.departures %}
+                            <div class="line-departures">
+                                {% for dep in group.departures %}
+                                <div class="line-departure">
+                                    <div class="line-minutes">{{ dep.minutes_until }} min</div>
+                                    <div class="line-time">{{ dep.time_local }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% elif stop.error %}
+                            <div class="empty-state">{{ stop.error }}</div>
+                            {% else %}
+                            <div class="empty-state">No live departures are currently available for line {{ group.line_id }}.</div>
+                            {% endif %}
+                        </section>
+                        {% endfor %}
+                    </div>
+                    {% elif stop.departures %}
                     <div class="departure-list">
                         {% for dep in stop.departures %}
                         <div class="departure">
@@ -787,27 +734,14 @@ def dashboard():
                         </div>
                         {% endfor %}
                     </div>
-                    {% elif departures_error %}
-                    <div class="empty-state">{{ departures_error }}</div>
+                    {% elif stop.error %}
+                    <div class="empty-state">{{ stop.error }}</div>
                     {% else %}
                     <div class="empty-state">No upcoming trams are currently available for this stop.</div>
                     {% endif %}
                 </div>
             </article>
             {% endfor %}
-
-            <aside class="panel weather-panel">
-                <div class="panel-inner">
-                    <div class="panel-kicker">Micro forecast</div>
-                    <h2 class="panel-title">Uccle conditions</h2>
-                    <p class="panel-copy">Current weather near the tram corridor.</p>
-                    <div class="weather-current">
-                        <div class="weather-meta">{{ weather.meta }}</div>
-                        <div id="weather-temp" class="weather-temp">{{ weather.temperature }}</div>
-                        <div id="weather-desc" class="weather-desc">{{ weather.description }}</div>
-                    </div>
-                </div>
-            </aside>
 
             <section class="panel notice-panel">
                 <div class="panel-inner">
@@ -816,7 +750,7 @@ def dashboard():
                             <div class="panel-kicker">Traveller information</div>
                             <h2 class="panel-title">Service updates</h2>
                             <p class="panel-copy">
-                                Updates affecting your route appear first. If none are active, this panel shows the most important current STIB alerts.
+                                Updates are limited to metro lines and trams 18, 4, 10, and 92, with notices for your monitored stops shown first.
                             </p>
                         </div>
                         <div class="status-pill">Up to 6 updates</div>

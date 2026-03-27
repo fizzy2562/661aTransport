@@ -24,6 +24,7 @@ STOPS = [
     StopConfig(label="toward ALBERT", pointid="5830", destination="ALBERT", static_id="5830F"),
     StopConfig(label="toward VAN HAELEN", pointid="0711", destination="VAN HAELEN", static_id="0711F"),
 ]
+MONITORED_LINES = ["1", "2", "5", "6", "18", "4", "10", "92"]
 
 
 def test_departures_are_grouped_and_sorted():
@@ -89,7 +90,7 @@ def test_traveller_notice_prefers_english_and_marks_relevance():
         ]
     )
 
-    notices, error = client.get_traveller_notices("18", STOPS)
+    notices, error = client.get_traveller_notices(MONITORED_LINES, STOPS)
 
     assert error is None
     assert notices[0]["text"] == "Line 18 diversion at Albert"
@@ -98,19 +99,19 @@ def test_traveller_notice_prefers_english_and_marks_relevance():
     assert notices[0]["linked_date"] is None
 
 
-def test_traveller_notice_falls_back_to_high_priority_network_notice():
+def test_traveller_notice_falls_back_to_high_priority_monitored_line():
     client = FakeClient(
         traveller_records=[
             {
-                "content": '[{"text":[{"en":"Lower priority network notice"}]}]',
+                "content": '[{"text":[{"en":"Lower priority unrelated tram notice"}]}]',
                 "lines": '[{"id":"54"}]',
                 "points": '[]',
                 "priority": 4,
                 "type": "LongText",
             },
             {
-                "content": '[{"text":[{"en":"High priority network notice"}]}]',
-                "lines": '[]',
+                "content": '[{"text":[{"en":"High priority line 4 notice"}]}]',
+                "lines": '[{"id":"4"}]',
                 "points": '[]',
                 "priority": 6,
                 "type": "LongText",
@@ -118,10 +119,10 @@ def test_traveller_notice_falls_back_to_high_priority_network_notice():
         ]
     )
 
-    notices, _ = client.get_traveller_notices("18", STOPS)
+    notices, _ = client.get_traveller_notices(MONITORED_LINES, STOPS)
 
-    assert notices[0]["text"] == "High priority network notice"
-    assert notices[0]["scope_label"] == "Network alert"
+    assert notices[0]["text"] == "High priority line 4 notice"
+    assert notices[0]["scope_label"] == "For your route"
 
 
 def test_traveller_notice_list_is_capped_at_six():
@@ -129,7 +130,7 @@ def test_traveller_notice_list_is_capped_at_six():
         traveller_records=[
             {
                 "content": f'[{{"text":[{{"en":"Notice {idx}"}}]}}]',
-                "lines": "[]",
+                "lines": '[{"id":"18"}]',
                 "points": "[]",
                 "priority": 4,
                 "type": "LongText",
@@ -138,7 +139,7 @@ def test_traveller_notice_list_is_capped_at_six():
         ]
     )
 
-    notices, _ = client.get_traveller_notices("18", STOPS)
+    notices, _ = client.get_traveller_notices(MONITORED_LINES, STOPS)
 
     assert len(notices) == 6
 
@@ -163,10 +164,42 @@ def test_traveller_notice_filters_generic_messages_and_cleans_spacing():
         ]
     )
 
-    notices, _ = client.get_traveller_notices("18", STOPS)
+    notices, _ = client.get_traveller_notices(MONITORED_LINES, STOPS)
 
     assert len(notices) == 1
     assert notices[0]["text"] == "Works. Stop moved. Stop now on avenue Brugmann."
+
+
+def test_traveller_notice_excludes_unmonitored_and_network_wide_updates():
+    client = FakeClient(
+        traveller_records=[
+            {
+                "content": '[{"text":[{"en":"Network-wide notice"}]}]',
+                "lines": '[]',
+                "points": '[]',
+                "priority": 8,
+                "type": "LongText",
+            },
+            {
+                "content": '[{"text":[{"en":"Line 54 notice"}]}]',
+                "lines": '[{"id":"54"}]',
+                "points": '[]',
+                "priority": 7,
+                "type": "LongText",
+            },
+            {
+                "content": '[{"text":[{"en":"Line 10 notice"}]}]',
+                "lines": '[{"id":"10"}]',
+                "points": '[]',
+                "priority": 5,
+                "type": "LongText",
+            },
+        ]
+    )
+
+    notices, _ = client.get_traveller_notices(MONITORED_LINES, STOPS)
+
+    assert [notice["text"] for notice in notices] == ["Line 10 notice"]
 
 
 def test_extract_notice_text_joins_unique_sections():

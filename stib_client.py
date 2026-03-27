@@ -73,14 +73,14 @@ class StibClient:
             return empty, "Departures are temporarily unavailable."
 
     def get_traveller_notices(
-        self, line_id: str, stops: list[StopConfig]
+        self, monitored_lines: list[str], stops: list[StopConfig]
     ) -> tuple[list[dict[str, Any]], str | None]:
         try:
             records = self._request_json(
                 "/rt/TravellersInformation",
                 params={"limit": 254},
             ).get("results", [])
-            return self._normalize_traveller_notices(records, line_id, stops), None
+            return self._normalize_traveller_notices(records, monitored_lines, stops), None
         except Exception:
             LOGGER.exception("Unable to load traveller notices")
             return [], "Traveller notices are temporarily unavailable."
@@ -163,8 +163,9 @@ class StibClient:
         return departures_by_stop
 
     def _normalize_traveller_notices(
-        self, records: list[dict[str, Any]], line_id: str, stops: list[StopConfig]
+        self, records: list[dict[str, Any]], monitored_lines: list[str], stops: list[StopConfig]
     ) -> list[dict[str, Any]]:
+        allowed_lines = set(monitored_lines)
         point_ids = {stop.pointid for stop in stops}
         static_ids = {stop.static_id for stop in stops if stop.static_id}
         relevant_notices: list[dict[str, Any]] = []
@@ -181,8 +182,11 @@ class StibClient:
             lines = [line.get("id", "") for line in _load_embedded_json(record.get("lines"))]
             points = [point.get("id", "") for point in _load_embedded_json(record.get("points"))]
             priority = int(record.get("priority") or 0)
+            matched_lines = [line for line in lines if line in allowed_lines]
+            if not matched_lines:
+                continue
 
-            line_match = line_id in lines
+            line_match = bool(matched_lines)
             point_match = bool(point_ids.intersection(points) or static_ids.intersection(points))
             relevance = 0
             if line_match:
@@ -195,10 +199,10 @@ class StibClient:
                 "priority": priority,
                 "priority_label": _priority_label(priority),
                 "priority_tone": _priority_tone(priority),
-                "lines": [line for line in lines if line],
+                "lines": matched_lines,
                 "points": [point for point in points if point],
                 "relevance": relevance,
-                "scope_label": _scope_label(line_id, lines, relevance),
+                "scope_label": _scope_label(matched_lines, relevance),
                 "linked_date": _extract_notice_linked_date(text),
             }
 
@@ -274,14 +278,12 @@ def _is_actionable_notice(text: str) -> bool:
     return not lowered.startswith(ignored_prefixes)
 
 
-def _scope_label(line_id: str, lines: list[str], relevance: int) -> str:
+def _scope_label(matched_lines: list[str], relevance: int) -> str:
     if relevance:
         return "For your route"
-    if line_id in lines:
-        return f"Line {line_id}"
-    if lines:
-        return "Lines " + ", ".join(lines[:3])
-    return "Network alert"
+    if len(matched_lines) == 1:
+        return f"Line {matched_lines[0]}"
+    return "Monitored lines"
 
 
 def _extract_notice_linked_date(text: str) -> str | None:
